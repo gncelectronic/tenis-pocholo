@@ -22,15 +22,24 @@ WHITE = (255, 255, 255)
 RED = (200, 0, 0)
 BROWN = (139, 69, 19)
 YELLOW = (255, 255, 0)
+BLACK = (0, 0, 0)
+SKIN = (255, 224, 189)
+BLUE = (30, 144, 255)
 
 # Jugadores
-player_img = pygame.Surface((60, 120), pygame.SRCALPHA)
-pygame.draw.ellipse(player_img, WHITE, [0, 0, 60, 120])
+def create_player_image(color):
+    img = pygame.Surface((60, 120), pygame.SRCALPHA)
+    pygame.draw.rect(img, BLACK, (15, 80, 12, 40))
+    pygame.draw.rect(img, BLACK, (33, 80, 12, 40))
+    pygame.draw.rect(img, color, (15, 40, 30, 40))
+    pygame.draw.circle(img, SKIN, (30, 20), 20)
+    return img
+
+player_img = create_player_image(BLUE)
 player = pygame.Rect(60, HEIGHT // 2 - 60, 60, 120)
 player_speed = 10
 
-opponent_img = pygame.Surface((60, 120), pygame.SRCALPHA)
-pygame.draw.ellipse(opponent_img, WHITE, [0, 0, 60, 120])
+opponent_img = create_player_image(RED)
 opponent = pygame.Rect(WIDTH - 120, HEIGHT // 2 - 60, 60, 120)
 opponent_speed = 7
 
@@ -39,9 +48,19 @@ ball = pygame.Rect(WIDTH // 2 - 10, HEIGHT // 2 - 10, 20, 20)
 ball_speed = [7, 7]
 
 # Perros salchicha
-dog_img = pygame.Surface((90, 40), pygame.SRCALPHA)
-pygame.draw.ellipse(dog_img, BROWN, [0, 0, 90, 40])
-pygame.draw.circle(dog_img, BROWN, (80, 20), 20)
+def create_dog_image():
+    img = pygame.Surface((100, 60), pygame.SRCALPHA)
+    pygame.draw.ellipse(img, BROWN, [0, 20, 80, 25])
+    pygame.draw.circle(img, BROWN, (85, 32), 15)
+    pygame.draw.ellipse(img, BROWN, [80, 15, 12, 18])
+    pygame.draw.rect(img, BLACK, (10, 43, 10, 15))
+    pygame.draw.rect(img, BLACK, (30, 43, 10, 15))
+    pygame.draw.rect(img, BLACK, (50, 43, 10, 15))
+    pygame.draw.rect(img, BLACK, (70, 43, 10, 15))
+    pygame.draw.circle(img, BLACK, (90, 30), 3)
+    return img
+
+dog_img = create_dog_image()
 dogs = []
 DOG_SPAWN_TIME = 180
 dog_timer = 0
@@ -59,10 +78,10 @@ font = pygame.font.SysFont("Arial", 40)
 game_state = "menu"
 
 def spawn_dog():
-    y = random.randint(60, HEIGHT - 100)
+    y = random.randint(60, HEIGHT - 110)
     direction = random.choice([-1, 1])
-    x = WIDTH if direction == -1 else -90
-    dogs.append({"rect": pygame.Rect(x, y, 90, 40), "dir": direction, "has_ball": False})
+    x = WIDTH if direction == -1 else -100
+    dogs.append({"rect": pygame.Rect(x, y, 100, 60), "dir": direction, "has_ball": False})
 
 def reset_ball(direction=None):
     global ball, ball_speed, ball_taken, dog_with_ball
@@ -109,7 +128,7 @@ def update_dogs():
                 sound_dog.play()
         if dog["has_ball"]:
             ball.center = dog["rect"].center
-        if dog["rect"].x < -100 or dog["rect"].x > WIDTH + 100:
+        if dog["rect"].x < -120 or dog["rect"].x > WIDTH + 120:
             dogs.remove(dog)
             if dog is dog_with_ball:
                 reset_ball(direction=random.choice([-7, 7]))
