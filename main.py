@@ -1,6 +1,8 @@
 import pygame
 import sys
 import random
+import math
+import array
 
 pygame.init()
 WIDTH, HEIGHT = 1000, 600
@@ -8,13 +10,24 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tenis Pocholo: ¡Cuidado con los salchichas!")
 clock = pygame.time.Clock()
 
+def _tone(frequency, duration=0.2, volume=0.5):
+    sample_rate = 44100
+    n_samples = int(sample_rate * duration)
+    buf = array.array('h')
+    amplitude = int(32767 * volume)
+    for i in range(n_samples):
+        t = i / sample_rate
+        buf.append(int(amplitude * math.sin(2 * math.pi * frequency * t)))
+    return pygame.mixer.Sound(buffer=buf)
+
 try:
-    pygame.mixer.init()
-    sound_score = pygame.mixer.Sound("assets/score.wav")
-    sound_dog = pygame.mixer.Sound("assets/dog.wav")
-    sound_recover = pygame.mixer.Sound("assets/recover.wav")
+    pygame.mixer.init(frequency=44100, size=-16, channels=1)
+    sound_crowd = _tone(300, 0.4, 0.3)
+    sound_dog = _tone(500, 0.2)
+    sound_hit = _tone(800, 0.1)
+    sound_recover = _tone(600, 0.1)
 except Exception:
-    sound_score = sound_dog = sound_recover = None
+    sound_crowd = sound_dog = sound_hit = sound_recover = None
 
 # Colores
 GREEN = (34, 139, 34)
@@ -46,10 +59,12 @@ def create_player_image(color):
     pygame.draw.circle(img, SKIN, (30, 20), 20)
     # Pelo con flequillo
     pygame.draw.polygon(img, HAIR, [(10, 5), (50, 5), (50, 20), (40, 15), (30, 20), (20, 15), (10, 20)])
-    # Detalles del rostro
-    pygame.draw.circle(img, BLACK, (22, 18), 3)  # ojo izquierdo
-    pygame.draw.circle(img, BLACK, (38, 18), 3)  # ojo derecho
-    pygame.draw.line(img, BLACK, (22, 30), (38, 30), 3)  # boca
+    # Detalles del rostro estilo retro tipo "Double Dragon"
+    pygame.draw.rect(img, BLACK, (18, 12, 24, 4))  # cejas
+    pygame.draw.rect(img, BLACK, (22, 18, 3, 3))  # ojo izquierdo
+    pygame.draw.rect(img, BLACK, (35, 18, 3, 3))  # ojo derecho
+    pygame.draw.rect(img, (255, 150, 150), (28, 22, 4, 4))  # nariz
+    pygame.draw.rect(img, BLACK, (22, 30, 20, 4))  # boca
     return img
 
 player_img = create_player_image(BLUE)
@@ -136,9 +151,11 @@ def draw_court():
     screen.blit(stands_bottom, (50, HEIGHT - 40))
     pygame.draw.rect(screen, WHITE, (50, 50, WIDTH - 100, HEIGHT - 100), 5)
     pygame.draw.line(screen, WHITE, (WIDTH // 2, 50), (WIDTH // 2, HEIGHT - 50), 5)
-    # Árbitro en el medio
-    pygame.draw.rect(screen, BLACK, (WIDTH // 2 - 5, HEIGHT // 2 - 20, 10, 40))
-    pygame.draw.circle(screen, SKIN, (WIDTH // 2, HEIGHT // 2 - 25), 8)
+    # Árbitro al medio pero fuera de la cancha (lado izquierdo)
+    ref_x = 20
+    ref_y = HEIGHT // 2
+    pygame.draw.rect(screen, BLACK, (ref_x - 5, ref_y - 20, 10, 40))
+    pygame.draw.circle(screen, SKIN, (ref_x, ref_y - 25), 8)
 
 def draw():
     draw_court()
@@ -189,8 +206,8 @@ def hit_dogs():
             if dog["has_ball"]:
                 reset_ball(direction=random.choice([-7, 7]))
             dog["has_ball"] = False
-            if sound_dog:
-                sound_dog.play()
+            if sound_hit:
+                sound_hit.play()
 
 def recover_ball():
     global ball_taken, dog_with_ball
@@ -215,8 +232,8 @@ def add_score(left_side):
         opponent_score += 1
     else:
         player_score += 1
-    if sound_score:
-        sound_score.play()
+    if sound_crowd:
+        sound_crowd.play()
 
 def game_loop():
     global dog_timer, game_state
