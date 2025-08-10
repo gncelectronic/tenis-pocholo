@@ -17,12 +17,26 @@ def _tone(frequency, duration=0.2, volume=0.5):
     amplitude = int(32767 * volume)
     for i in range(n_samples):
         t = i / sample_rate
-        buf.append(int(amplitude * math.sin(2 * math.pi * frequency * t)))
+        envelope = min(1.0, t / 0.02) * (1 - t / duration)
+        sample = math.sin(2 * math.pi * frequency * t) * envelope
+        buf.append(int(amplitude * sample))
+    return pygame.mixer.Sound(buffer=buf)
+
+
+def _noise(duration=0.5, volume=0.5):
+    sample_rate = 44100
+    n_samples = int(sample_rate * duration)
+    buf = array.array('h')
+    amplitude = int(32767 * volume)
+    for i in range(n_samples):
+        t = i / sample_rate
+        envelope = 1 - t / duration
+        buf.append(int(random.uniform(-1, 1) * amplitude * envelope))
     return pygame.mixer.Sound(buffer=buf)
 
 try:
     pygame.mixer.init(frequency=44100, size=-16, channels=1)
-    sound_crowd = _tone(300, 0.4, 0.3)
+    sound_crowd = _noise(1.0, 0.3)
     sound_dog = _tone(500, 0.2)
     sound_hit = _tone(800, 0.1)
     sound_recover = _tone(600, 0.1)
@@ -44,27 +58,29 @@ HAIR = (99, 64, 32)
 # Jugadores
 def create_player_image(color):
     img = pygame.Surface((80, 120), pygame.SRCALPHA)
-    # Piernas
-    pygame.draw.rect(img, BLACK, (15, 80, 12, 40))
-    pygame.draw.rect(img, BLACK, (33, 80, 12, 40))
-    # Torso
-    pygame.draw.rect(img, color, (15, 40, 30, 40))
-    # Brazo sosteniendo la raqueta
-    pygame.draw.rect(img, SKIN, (45, 45, 20, 10))
+    # Piernas musculosas
+    pygame.draw.rect(img, BLACK, (18, 80, 16, 40))
+    pygame.draw.rect(img, BLACK, (46, 80, 16, 40))
+    # Torso ancho estilo "Double Dragon"
+    pygame.draw.rect(img, color, (10, 40, 60, 40))
+    pygame.draw.rect(img, BLACK, (10, 40, 60, 40), 2)
+    # Brazos
+    pygame.draw.rect(img, SKIN, (10, 45, 15, 25))  # brazo izquierdo
+    pygame.draw.rect(img, SKIN, (55, 45, 20, 10))  # brazo derecho sosteniendo la raqueta
     # Raqueta (mango y aro)
     pygame.draw.rect(img, BLACK, (60, 40, 5, 25))
     pygame.draw.ellipse(img, WHITE, (55, 20, 25, 25))
     pygame.draw.ellipse(img, BLACK, (55, 20, 25, 25), 2)
     # Cabeza
-    pygame.draw.circle(img, SKIN, (30, 20), 20)
+    pygame.draw.circle(img, SKIN, (40, 20), 20)
     # Pelo con flequillo
-    pygame.draw.polygon(img, HAIR, [(10, 5), (50, 5), (50, 20), (40, 15), (30, 20), (20, 15), (10, 20)])
+    pygame.draw.polygon(img, HAIR, [(20, 5), (60, 5), (60, 20), (50, 15), (40, 20), (30, 15), (20, 20)])
     # Detalles del rostro estilo retro tipo "Double Dragon"
-    pygame.draw.rect(img, BLACK, (18, 12, 24, 4))  # cejas
-    pygame.draw.rect(img, BLACK, (22, 18, 3, 3))  # ojo izquierdo
-    pygame.draw.rect(img, BLACK, (35, 18, 3, 3))  # ojo derecho
-    pygame.draw.rect(img, (255, 150, 150), (28, 22, 4, 4))  # nariz
-    pygame.draw.rect(img, BLACK, (22, 30, 20, 4))  # boca
+    pygame.draw.rect(img, BLACK, (28, 12, 24, 4))  # cejas
+    pygame.draw.rect(img, BLACK, (32, 18, 3, 3))  # ojo izquierdo
+    pygame.draw.rect(img, BLACK, (45, 18, 3, 3))  # ojo derecho
+    pygame.draw.rect(img, (255, 150, 150), (38, 22, 4, 4))  # nariz
+    pygame.draw.rect(img, BLACK, (32, 30, 20, 4))  # boca
     return img
 
 player_img = create_player_image(BLUE)
