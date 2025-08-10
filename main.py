@@ -26,6 +26,7 @@ BLACK = (0, 0, 0)
 SKIN = (255, 224, 189)
 BLUE = (30, 144, 255)
 FLUO_YELLOW = (204, 255, 0)
+HAIR = (99, 64, 32)
 
 # Jugadores
 def create_player_image(color):
@@ -43,8 +44,9 @@ def create_player_image(color):
     pygame.draw.ellipse(img, BLACK, (55, 20, 25, 25), 2)
     # Cabeza
     pygame.draw.circle(img, SKIN, (30, 20), 20)
-    # Detalles del rostro estilo Double Dragon
-    pygame.draw.rect(img, color, (10, 10, 40, 5))  # cinta en la cabeza
+    # Pelo con flequillo
+    pygame.draw.polygon(img, HAIR, [(10, 5), (50, 5), (50, 20), (40, 15), (30, 20), (20, 15), (10, 20)])
+    # Detalles del rostro
     pygame.draw.circle(img, BLACK, (22, 18), 3)  # ojo izquierdo
     pygame.draw.circle(img, BLACK, (38, 18), 3)  # ojo derecho
     pygame.draw.line(img, BLACK, (22, 30), (38, 30), 3)  # boca
@@ -65,16 +67,22 @@ ball_speed = [7, 7]
 # Perros salchicha
 def create_dog_image():
     img = pygame.Surface((120, 60), pygame.SRCALPHA)
-    # Cuerpo alargado típico del salchicha
-    pygame.draw.ellipse(img, BROWN, [10, 25, 90, 25])
+    # Cuerpo alargado con contorno
+    pygame.draw.ellipse(img, BROWN, (10, 25, 90, 25))
+    pygame.draw.ellipse(img, BLACK, (10, 25, 90, 25), 2)
     # Cabeza con hocico
-    pygame.draw.circle(img, BROWN, (100, 37), 15)
-    pygame.draw.circle(img, BLACK, (110, 37), 3)  # nariz
-    # Oreja caída
-    pygame.draw.ellipse(img, BROWN, [95, 25, 18, 20])
-    # Cola
+    pygame.draw.ellipse(img, BROWN, (85, 15, 30, 30))
+    pygame.draw.ellipse(img, BLACK, (85, 15, 30, 30), 2)
+    pygame.draw.circle(img, BLACK, (110, 30), 4)  # nariz
+    pygame.draw.circle(img, WHITE, (100, 30), 6)  # ojo
+    pygame.draw.circle(img, BLACK, (100, 30), 3)
+    # Oreja caída más oscura
+    pygame.draw.ellipse(img, (100, 50, 0), (80, 20, 20, 25))
+    pygame.draw.ellipse(img, BLACK, (80, 20, 20, 25), 1)
+    # Cola con contorno
     pygame.draw.polygon(img, BROWN, [(10, 35), (0, 30), (0, 40)])
-    # Patas cortas
+    pygame.draw.polygon(img, BLACK, [(10, 35), (0, 30), (0, 40)], 1)
+    # Patas cortas con contorno
     for x in (25, 45, 65, 85):
         pygame.draw.rect(img, BROWN, (x, 43, 10, 15))
         pygame.draw.rect(img, BLACK, (x, 43, 10, 15), 1)
@@ -94,6 +102,18 @@ player_score = 0
 opponent_score = 0
 font = pygame.font.SysFont("Arial", 40)
 
+def create_stands_surface():
+    surf = pygame.Surface((WIDTH - 100, 40))
+    surf.fill((70, 70, 70))
+    colors = [RED, BLUE, YELLOW, WHITE]
+    for x in range(0, surf.get_width(), 10):
+        for y in range(0, 40, 10):
+            pygame.draw.circle(surf, random.choice(colors), (x + 5, y + 5), 3)
+    return surf
+
+stands_top = create_stands_surface()
+stands_bottom = create_stands_surface()
+
 # Menú
 game_state = "menu"
 
@@ -101,7 +121,7 @@ def spawn_dog():
     y = random.randint(60, HEIGHT - 110)
     direction = random.choice([-1, 1])
     x = WIDTH if direction == -1 else -120
-    dogs.append({"rect": pygame.Rect(x, y, 120, 60), "dir": direction, "has_ball": False})
+    dogs.append({"rect": pygame.Rect(x, y, 120, 60), "dir": direction, "has_ball": False, "hit": False})
 
 def reset_ball(direction=None):
     global ball, ball_speed, ball_taken, dog_with_ball
@@ -112,8 +132,13 @@ def reset_ball(direction=None):
 
 def draw_court():
     screen.fill(GREEN)
+    screen.blit(stands_top, (50, 0))
+    screen.blit(stands_bottom, (50, HEIGHT - 40))
     pygame.draw.rect(screen, WHITE, (50, 50, WIDTH - 100, HEIGHT - 100), 5)
     pygame.draw.line(screen, WHITE, (WIDTH // 2, 50), (WIDTH // 2, HEIGHT - 50), 5)
+    # Árbitro en el medio
+    pygame.draw.rect(screen, BLACK, (WIDTH // 2 - 5, HEIGHT // 2 - 20, 10, 40))
+    pygame.draw.circle(screen, SKIN, (WIDTH // 2, HEIGHT // 2 - 25), 8)
 
 def draw():
     draw_court()
@@ -139,8 +164,9 @@ def draw_menu():
 def update_dogs():
     global ball_taken, dog_with_ball
     for dog in dogs[:]:
-        dog["rect"].x += dog["dir"] * 5
-        if dog["rect"].colliderect(ball) and not ball_taken:
+        speed = 15 if dog["hit"] else 5
+        dog["rect"].x += dog["dir"] * speed
+        if dog["rect"].colliderect(ball) and not ball_taken and not dog["hit"]:
             ball_taken = True
             dog["has_ball"] = True
             dog_with_ball = dog
@@ -152,6 +178,19 @@ def update_dogs():
             dogs.remove(dog)
             if dog is dog_with_ball:
                 reset_ball(direction=random.choice([-7, 7]))
+
+def hit_dogs():
+    global ball_taken, dog_with_ball
+    racquet_rect = pygame.Rect(player.right - 20, player.y + 20, 40, 60)
+    for dog in dogs:
+        if racquet_rect.colliderect(dog["rect"]):
+            dog["hit"] = True
+            dog["dir"] = 1 if dog["rect"].centerx > player.centerx else -1
+            if dog["has_ball"]:
+                reset_ball(direction=random.choice([-7, 7]))
+            dog["has_ball"] = False
+            if sound_dog:
+                sound_dog.play()
 
 def recover_ball():
     global ball_taken, dog_with_ball
@@ -192,8 +231,11 @@ def game_loop():
             player.y -= player_speed
         if keys[pygame.K_DOWN] and player.bottom < HEIGHT:
             player.y += player_speed
-        if keys[pygame.K_SPACE] and ball_taken:
-            recover_ball()
+        if keys[pygame.K_SPACE]:
+            if ball_taken:
+                recover_ball()
+            else:
+                hit_dogs()
 
         if not ball_taken:
             ball.x += ball_speed[0]
