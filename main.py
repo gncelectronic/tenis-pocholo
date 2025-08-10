@@ -25,22 +25,37 @@ YELLOW = (255, 255, 0)
 BLACK = (0, 0, 0)
 SKIN = (255, 224, 189)
 BLUE = (30, 144, 255)
+FLUO_YELLOW = (204, 255, 0)
 
 # Jugadores
 def create_player_image(color):
-    img = pygame.Surface((60, 120), pygame.SRCALPHA)
+    img = pygame.Surface((80, 120), pygame.SRCALPHA)
+    # Piernas
     pygame.draw.rect(img, BLACK, (15, 80, 12, 40))
     pygame.draw.rect(img, BLACK, (33, 80, 12, 40))
+    # Torso
     pygame.draw.rect(img, color, (15, 40, 30, 40))
+    # Brazo sosteniendo la raqueta
+    pygame.draw.rect(img, SKIN, (45, 45, 20, 10))
+    # Raqueta (mango y aro)
+    pygame.draw.rect(img, BLACK, (60, 40, 5, 25))
+    pygame.draw.ellipse(img, WHITE, (55, 20, 25, 25))
+    pygame.draw.ellipse(img, BLACK, (55, 20, 25, 25), 2)
+    # Cabeza
     pygame.draw.circle(img, SKIN, (30, 20), 20)
+    # Detalles del rostro estilo Double Dragon
+    pygame.draw.rect(img, color, (10, 10, 40, 5))  # cinta en la cabeza
+    pygame.draw.circle(img, BLACK, (22, 18), 3)  # ojo izquierdo
+    pygame.draw.circle(img, BLACK, (38, 18), 3)  # ojo derecho
+    pygame.draw.line(img, BLACK, (22, 30), (38, 30), 3)  # boca
     return img
 
 player_img = create_player_image(BLUE)
-player = pygame.Rect(60, HEIGHT // 2 - 60, 60, 120)
+player = pygame.Rect(60, HEIGHT // 2 - 60, 80, 120)
 player_speed = 10
 
 opponent_img = create_player_image(RED)
-opponent = pygame.Rect(WIDTH - 120, HEIGHT // 2 - 60, 60, 120)
+opponent = pygame.Rect(WIDTH - 140, HEIGHT // 2 - 60, 80, 120)
 opponent_speed = 7
 
 # Pelota
@@ -49,15 +64,20 @@ ball_speed = [7, 7]
 
 # Perros salchicha
 def create_dog_image():
-    img = pygame.Surface((100, 60), pygame.SRCALPHA)
-    pygame.draw.ellipse(img, BROWN, [0, 20, 80, 25])
-    pygame.draw.circle(img, BROWN, (85, 32), 15)
-    pygame.draw.ellipse(img, BROWN, [80, 15, 12, 18])
-    pygame.draw.rect(img, BLACK, (10, 43, 10, 15))
-    pygame.draw.rect(img, BLACK, (30, 43, 10, 15))
-    pygame.draw.rect(img, BLACK, (50, 43, 10, 15))
-    pygame.draw.rect(img, BLACK, (70, 43, 10, 15))
-    pygame.draw.circle(img, BLACK, (90, 30), 3)
+    img = pygame.Surface((120, 60), pygame.SRCALPHA)
+    # Cuerpo alargado típico del salchicha
+    pygame.draw.ellipse(img, BROWN, [10, 25, 90, 25])
+    # Cabeza con hocico
+    pygame.draw.circle(img, BROWN, (100, 37), 15)
+    pygame.draw.circle(img, BLACK, (110, 37), 3)  # nariz
+    # Oreja caída
+    pygame.draw.ellipse(img, BROWN, [95, 25, 18, 20])
+    # Cola
+    pygame.draw.polygon(img, BROWN, [(10, 35), (0, 30), (0, 40)])
+    # Patas cortas
+    for x in (25, 45, 65, 85):
+        pygame.draw.rect(img, BROWN, (x, 43, 10, 15))
+        pygame.draw.rect(img, BLACK, (x, 43, 10, 15), 1)
     return img
 
 dog_img = create_dog_image()
@@ -80,8 +100,8 @@ game_state = "menu"
 def spawn_dog():
     y = random.randint(60, HEIGHT - 110)
     direction = random.choice([-1, 1])
-    x = WIDTH if direction == -1 else -100
-    dogs.append({"rect": pygame.Rect(x, y, 100, 60), "dir": direction, "has_ball": False})
+    x = WIDTH if direction == -1 else -120
+    dogs.append({"rect": pygame.Rect(x, y, 120, 60), "dir": direction, "has_ball": False})
 
 def reset_ball(direction=None):
     global ball, ball_speed, ball_taken, dog_with_ball
@@ -101,7 +121,7 @@ def draw():
     screen.blit(opponent_img, opponent)
     for dog in dogs:
         screen.blit(dog_img, dog["rect"])
-    pygame.draw.ellipse(screen, RED, ball)
+    pygame.draw.ellipse(screen, FLUO_YELLOW, ball)
     score_text = font.render(f"Jugador: {player_score}  CPU: {opponent_score}", True, YELLOW)
     screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, 20))
     pygame.display.flip()
@@ -128,7 +148,7 @@ def update_dogs():
                 sound_dog.play()
         if dog["has_ball"]:
             ball.center = dog["rect"].center
-        if dog["rect"].x < -120 or dog["rect"].x > WIDTH + 120:
+        if dog["rect"].x < -150 or dog["rect"].x > WIDTH + 150:
             dogs.remove(dog)
             if dog is dog_with_ball:
                 reset_ball(direction=random.choice([-7, 7]))

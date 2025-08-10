@@ -1,6 +1,7 @@
 # Tenis Pocholo
 
-Arcade de tenis 2D donde perros salchicha intentan robar la pelota.
+Arcade de tenis 2D donde perros salchicha intentan robar la pelota. Los jugadores
+portan raquetas, muestran rostros estilo retro y la pelota es amarilla fluorescente.
 
 ## Requisitos
 - Python 3
