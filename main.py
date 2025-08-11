@@ -2,7 +2,7 @@ import sys
 import random
 
 import pygame
-from pygame.locals import DOUBLEBUF, OPENGL, K_DOWN, K_UP
+from pygame.locals import DOUBLEBUF, OPENGL, K_DOWN, K_UP, K_LEFT, K_RIGHT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
@@ -97,6 +97,68 @@ def draw_ball(position: list[float]) -> None:
     glPopMatrix()
 
 
+def draw_player(position: list[float], color: tuple[float, float, float]) -> None:
+    """Render a simple humanoid figure with limbs and a racket."""
+    glPushMatrix()
+    glTranslatef(position[0], 0, position[2])
+
+    # Torso
+    draw_box(0, 1.0, 0, 0.6, 1.5, 0.3, color)
+
+    # Head
+    glColor3f(1, 0.8, 0.6)
+    glPushMatrix()
+    glTranslatef(0, 1.5 + 0.4, 0)
+    quad = gluNewQuadric()
+    gluSphere(quad, 0.4, 16, 16)
+    gluDeleteQuadric(quad)
+    glPopMatrix()
+
+    # Hair
+    glColor3f(0.2, 0.1, 0.0)
+    glPushMatrix()
+    glTranslatef(0, 1.5 + 0.6, 0)
+    quad = gluNewQuadric()
+    gluSphere(quad, 0.45, 16, 16)
+    gluDeleteQuadric(quad)
+    glPopMatrix()
+
+    # Arms
+    glColor3f(1, 0.8, 0.6)
+    for x in (-0.45, 0.45):
+        glPushMatrix()
+        glTranslatef(x, 1.3, 0)
+        glRotatef(90, 0, 0, 1)
+        quad = gluNewQuadric()
+        gluCylinder(quad, 0.1, 0.1, 0.8, 8, 8)
+        gluDeleteQuadric(quad)
+        glPopMatrix()
+
+    # Legs
+    for x in (-0.2, 0.2):
+        glPushMatrix()
+        glTranslatef(x, 0.0, 0)
+        glRotatef(90, 1, 0, 0)
+        quad = gluNewQuadric()
+        gluCylinder(quad, 0.15, 0.15, 1.0, 8, 8)
+        gluDeleteQuadric(quad)
+        glPopMatrix()
+
+    # Racket in right hand
+    glColor3f(0.8, 0.8, 0.8)
+    glPushMatrix()
+    glTranslatef(0.9, 1.3, 0)
+    glRotatef(90, 0, 0, 1)
+    quad = gluNewQuadric()
+    gluCylinder(quad, 0.05, 0.05, 0.5, 8, 8)
+    glTranslatef(0, 0, 0.5)
+    gluCylinder(quad, 0.2, 0.2, 0.1, 16, 16)
+    gluDeleteQuadric(quad)
+    glPopMatrix()
+
+    glPopMatrix()
+
+
 def reset_ball(ball_pos, ball_speed):
     ball_pos[:] = [0.0, 1.5, 0.0]
     direction = random.choice([-1, 1])
@@ -119,25 +181,39 @@ def main():
                 sys.exit()
 
         keys = pygame.key.get_pressed()
-        if keys[K_UP] and player_pos[1] < 3.5:
-            player_pos[1] += 0.2
-        if keys[K_DOWN] and player_pos[1] > 0.5:
-            player_pos[1] -= 0.2
+        if keys[K_LEFT] and player_pos[0] > -COURT_HALF_WIDTH + PADDLE_WIDTH / 2:
+            player_pos[0] -= 0.2
+        if keys[K_RIGHT] and player_pos[0] < COURT_HALF_WIDTH - PADDLE_WIDTH / 2:
+            player_pos[0] += 0.2
+        if keys[K_UP] and player_pos[2] < -PADDLE_DEPTH:
+            player_pos[2] += 0.2
+        if keys[K_DOWN] and player_pos[2] > -COURT_HALF_DEPTH + PADDLE_DEPTH:
+            player_pos[2] -= 0.2
 
-        if opponent_pos[1] + 0.1 < ball_pos[1]:
-            opponent_pos[1] += 0.1
-        elif opponent_pos[1] - 0.1 > ball_pos[1]:
-            opponent_pos[1] -= 0.1
-        opponent_pos[1] = max(0.5, min(3.5, opponent_pos[1]))
+        if opponent_pos[0] + 0.1 < ball_pos[0]:
+            opponent_pos[0] += 0.1
+        elif opponent_pos[0] - 0.1 > ball_pos[0]:
+            opponent_pos[0] -= 0.1
+        opponent_pos[0] = max(-COURT_HALF_WIDTH + PADDLE_WIDTH / 2, min(COURT_HALF_WIDTH - PADDLE_WIDTH / 2, opponent_pos[0]))
 
         for i in range(3):
             ball_pos[i] += ball_speed[i]
         if ball_pos[1] >= 3.5 or ball_pos[1] <= 0.5:
             ball_speed[1] *= -1
 
-        if ball_pos[2] <= player_pos[2] + PADDLE_DEPTH and ball_pos[2] >= player_pos[2] and abs(ball_pos[0] - player_pos[0]) <= PADDLE_WIDTH and abs(ball_pos[1] - player_pos[1]) <= PADDLE_HEIGHT / 2:
+        if (
+            ball_pos[2] <= player_pos[2] + PADDLE_DEPTH
+            and ball_pos[2] >= player_pos[2]
+            and abs(ball_pos[0] - player_pos[0]) <= PADDLE_WIDTH
+            and abs(ball_pos[1] - 1.5) <= PADDLE_HEIGHT / 2
+        ):
             ball_speed[2] *= -1
-        if ball_pos[2] >= opponent_pos[2] - PADDLE_DEPTH and ball_pos[2] <= opponent_pos[2] and abs(ball_pos[0] - opponent_pos[0]) <= PADDLE_WIDTH and abs(ball_pos[1] - opponent_pos[1]) <= PADDLE_HEIGHT / 2:
+        if (
+            ball_pos[2] >= opponent_pos[2] - PADDLE_DEPTH
+            and ball_pos[2] <= opponent_pos[2]
+            and abs(ball_pos[0] - opponent_pos[0]) <= PADDLE_WIDTH
+            and abs(ball_pos[1] - 1.5) <= PADDLE_HEIGHT / 2
+        ):
             ball_speed[2] *= -1
 
         if ball_pos[2] < -COURT_HALF_DEPTH:
@@ -151,8 +227,8 @@ def main():
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         draw_court()
-        draw_box(*player_pos, PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_DEPTH, (0, 0, 1))
-        draw_box(*opponent_pos, PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_DEPTH, (1, 0, 0))
+        draw_player(player_pos, (0, 0, 1))
+        draw_player(opponent_pos, (1, 0, 0))
         draw_ball(ball_pos)
         pygame.display.flip()
         clock.tick(60)
