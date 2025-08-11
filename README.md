@@ -1,24 +1,22 @@
-# Tenis Pocholo
+# Tenis Pocholo 3D
 
-Arcade de tenis 2D donde perros salchicha intentan robar la pelota. Los jugadores
-portan raquetas, lucen flequillo y la pelota es amarilla fluorescente. Ahora la
-cancha incluye gradas con hinchada, un árbitro en el centro superior y rostros
-pixelados al estilo Double Dragon que silban cuando golpeas a un perro. Las
-figuras de los jugadores fueron ensanchadas para recordar la musculatura del
-clásico beat 'em up y los efectos de sonido se generan por código con aplausos y
-silbidos más realistas, sin archivos de audio externos.
+Versión básica en 3D del juego de tenis utilizando `pygame` y `PyOpenGL`. La
+cancha se representa con perspectiva, los jugadores son bloques y la pelota una
+esfera. El jugador controla la raqueta frontal con las flechas arriba/abajo y la
+IA mueve la raqueta contraria. El marcador aparece en el título de la ventana.
 
 ## Requisitos
 - Python 3
 - pygame
+- PyOpenGL
 
 ## Ejecución
 Instala las dependencias y ejecuta:
 
 ```
-pip install pygame
+pip install pygame PyOpenGL
 python main.py
 ```
 
-Mueve al jugador con las flechas arriba/abajo y usa la barra espaciadora para
-golpear a los perros o recuperar la pelota cuando un salchicha la haya robado.
+Mueve al jugador con las flechas arriba/abajo. La pelota rebota en las paredes
+y cambia de lado al golpear las raquetas.
