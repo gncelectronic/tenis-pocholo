@@ -1,4 +1,5 @@
 import sys
+import math
 import random
 from pathlib import Path
 
@@ -127,20 +128,56 @@ def draw_box(x: float, y: float, z: float, w: float, h: float, d: float, color: 
     glEnd()
 
 
-def draw_stands() -> None:
-    """Draw simple stands with a cheering crowd along the sidelines."""
-    # Stands structures
+class Spectator:
+    """Simple spectator that can optionally wave a flag and watch the ball."""
+
+    def __init__(self, x: float, z: float, has_flag: bool) -> None:
+        self.x = x
+        self.z = z
+        self.has_flag = has_flag
+        self.color = (random.random(), random.random(), random.random())
+        if has_flag:
+            self.flag_color = (random.random(), random.random(), random.random())
+
+    def draw(self, ball_x: float) -> None:
+        glPushMatrix()
+        glTranslatef(self.x, 0.0, self.z)
+
+        # Body
+        draw_box(0, 0.6, 0, 0.3, 1.2, 0.2, self.color)
+
+        # Head tracking the ball horizontally
+        glPushMatrix()
+        glTranslatef(0, 1.2, 0)
+        angle = max(-30.0, min(30.0, (ball_x - self.x) * 5.0))
+        glRotatef(angle, 0, 1, 0)
+        glColor3f(1, 0.8, 0.6)
+        quad = gluNewQuadric()
+        gluSphere(quad, 0.2, 8, 8)
+        gluDeleteQuadric(quad)
+        glPopMatrix()
+
+        # Optional flag
+        if self.has_flag:
+            glColor3fv(self.flag_color)
+            glBegin(GL_QUADS)
+            glVertex3f(0.15, 1.0, 0)
+            glVertex3f(0.15, 1.4, 0)
+            glVertex3f(0.45, 1.4, 0)
+            glVertex3f(0.45, 1.0, 0)
+            glEnd()
+
+        glPopMatrix()
+
+
+def draw_stands(spectators: list[Spectator], ball_x: float) -> None:
+    """Draw stands along the sidelines with a small crowd."""
     stand_color = (0.3, 0.3, 0.3)
     draw_box(-COURT_HALF_WIDTH - 1.5, 1.5, 0, 2.0, 3.0, COURT_HALF_DEPTH * 2 + 2, stand_color)
     draw_box(COURT_HALF_WIDTH + 1.5, 1.5, 0, 2.0, 3.0, COURT_HALF_DEPTH * 2 + 2, stand_color)
 
-    # Simple crowd blocks with random colors to simulate cheering
-    for side in (-COURT_HALF_WIDTH - 1.5, COURT_HALF_WIDTH + 1.5):
-        z = -COURT_HALF_DEPTH
-        while z <= COURT_HALF_DEPTH:
-            crowd_color = (random.random(), random.random(), random.random())
-            draw_box(side, 1.5, z, 1.8, 1.0, 0.8, crowd_color)
-            z += 2.0
+    for spec in spectators:
+        spec.draw(ball_x)
 
 
 def draw_ball(position: list[float]) -> None:
@@ -259,20 +296,26 @@ def main():
     opponent_serving_timer = 120
     dogs: list[Dog] = []
 
+    # Create spectators along both sidelines
+    spectators: list[Spectator] = []
+    for side in (-COURT_HALF_WIDTH - 1.5, COURT_HALF_WIDTH + 1.5):
+        z = -COURT_HALF_DEPTH
+        while z <= COURT_HALF_DEPTH:
+            spectators.append(Spectator(side, z, random.random() < 0.3))
+            z += 1.5
+
     font = pygame.font.SysFont(None, 48)
     hit_sound = pygame.mixer.Sound(str(HIT_FILE))
     score_sound = pygame.mixer.Sound(str(APPLAUSE_FILE))
 
     while True:
-        space_pressed = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN and event.key == K_SPACE:
-                space_pressed = True
 
         keys = pygame.key.get_pressed()
+        space_pressed = keys[K_SPACE]
         if keys[K_LEFT] and player_pos[0] > -COURT_HALF_WIDTH + PADDLE_WIDTH / 2:
             player_pos[0] -= 0.2
         if keys[K_RIGHT] and player_pos[0] < COURT_HALF_WIDTH - PADDLE_WIDTH / 2:
@@ -358,7 +401,7 @@ def main():
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         draw_court()
-        draw_stands()
+        draw_stands(spectators, ball_pos[0])
         draw_player(player_pos, (0, 0, 1))
         draw_player(opponent_pos, (1, 0, 0))
         draw_ball(ball_pos)
