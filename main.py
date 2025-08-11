@@ -1,24 +1,36 @@
 import sys
 import random
+
 import pygame
-from pygame.locals import DOUBLEBUF, OPENGL, K_UP, K_DOWN
+from pygame.locals import DOUBLEBUF, OPENGL, K_DOWN, K_UP
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-WIDTH, HEIGHT = 1000, 600
+# Window resolution boosted for a clearer view of the court
+WIDTH, HEIGHT = 1280, 720
+
+# Dimensions of paddles and play field
 PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_DEPTH = 1.0, 2.0, 0.3
 COURT_HALF_WIDTH, COURT_HALF_DEPTH = 5.0, 7.0
 
 
-def init():
+def init() -> None:
+    """Set up pygame and a simple 3D camera."""
     pygame.init()
     pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | OPENGL)
-    gluPerspective(45, WIDTH / HEIGHT, 0.1, 50.0)
-    glTranslatef(0.0, -1.5, -20)
+
+    # Basic perspective projection and camera position looking at the court
+    gluPerspective(60, WIDTH / HEIGHT, 0.1, 100.0)
+    glTranslatef(0.0, -2.0, -25)
+    glRotatef(20, 1, 0, 0)
+
     glEnable(GL_DEPTH_TEST)
+    glClearColor(0.0, 0.0, 0.0, 1.0)
 
 
-def draw_court():
+def draw_court() -> None:
+    """Render the floor, boundaries and a small net."""
+    # Floor
     glColor3f(0, 0.5, 0)
     glBegin(GL_QUADS)
     glVertex3f(-COURT_HALF_WIDTH, 0, -COURT_HALF_DEPTH)
@@ -26,14 +38,27 @@ def draw_court():
     glVertex3f(COURT_HALF_WIDTH, 0, COURT_HALF_DEPTH)
     glVertex3f(-COURT_HALF_WIDTH, 0, COURT_HALF_DEPTH)
     glEnd()
+
+    # Boundary lines
     glColor3f(1, 1, 1)
-    glBegin(GL_LINES)
-    glVertex3f(-COURT_HALF_WIDTH, 0, 0)
-    glVertex3f(COURT_HALF_WIDTH, 0, 0)
+    glBegin(GL_LINE_LOOP)
+    glVertex3f(-COURT_HALF_WIDTH, 0.01, -COURT_HALF_DEPTH)
+    glVertex3f(COURT_HALF_WIDTH, 0.01, -COURT_HALF_DEPTH)
+    glVertex3f(COURT_HALF_WIDTH, 0.01, COURT_HALF_DEPTH)
+    glVertex3f(-COURT_HALF_WIDTH, 0.01, COURT_HALF_DEPTH)
+    glEnd()
+
+    # Net
+    glBegin(GL_QUADS)
+    glVertex3f(-0.05, 0, 0)
+    glVertex3f(0.05, 0, 0)
+    glVertex3f(0.05, 1.5, 0)
+    glVertex3f(-0.05, 1.5, 0)
     glEnd()
 
 
-def draw_box(x, y, z, w, h, d, color):
+def draw_box(x: float, y: float, z: float, w: float, h: float, d: float, color: tuple[float, float, float]) -> None:
+    """Render a colored cuboid centered at (x, y, z)."""
     hw, hh, hd = w / 2, h / 2, d / 2
     vertices = [
         (x - hw, y - hh, z - hd),
@@ -61,12 +86,13 @@ def draw_box(x, y, z, w, h, d, color):
     glEnd()
 
 
-def draw_ball(position):
+def draw_ball(position: list[float]) -> None:
+    """Draw the tennis ball with a smoother sphere."""
     glColor3f(1, 1, 0)
     glPushMatrix()
     glTranslatef(*position)
     quad = gluNewQuadric()
-    gluSphere(quad, 0.3, 16, 16)
+    gluSphere(quad, 0.3, 32, 32)
     gluDeleteQuadric(quad)
     glPopMatrix()
 
