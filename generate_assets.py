@@ -2,6 +2,7 @@ import math
 import random
 import struct
 import wave
+from pathlib import Path
 
 SAMPLE_RATE = 44100
 
@@ -14,7 +15,9 @@ def generate_hit(path: str) -> None:
         struct.pack('<h', int(32767 * math.sin(2 * math.pi * freq * i / SAMPLE_RATE)))
         for i in range(int(SAMPLE_RATE * duration))
     ]
-    with wave.open(path, 'wb') as w:
+    out_path = Path(path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(out_path), 'wb') as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(SAMPLE_RATE)
@@ -28,7 +31,9 @@ def generate_applause(path: str) -> None:
         struct.pack('<h', int(32767 * random.uniform(-1, 1)))
         for _ in range(int(SAMPLE_RATE * duration))
     ]
-    with wave.open(path, 'wb') as w:
+    out_path = Path(path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(out_path), 'wb') as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(SAMPLE_RATE)

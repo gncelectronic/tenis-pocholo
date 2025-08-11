@@ -25,3 +25,6 @@ La ventana abre en 1280×720. Mueve al jugador con las flechas izquierda/derecha
 para desplazarte por la cancha y con arriba/abajo para acercarte o alejarte de
 la red. La pelota rebota en las paredes y cambia de lado al golpear las
 raquetas.
+
+Los sonidos de golpe y aplauso se generan automáticamente al iniciar el juego,
+por lo que no es necesario descargarlos previamente.
