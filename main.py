@@ -1,10 +1,12 @@
 import sys
 import random
+from pathlib import Path
 
 import pygame
 from pygame.locals import DOUBLEBUF, OPENGL, K_DOWN, K_UP, K_LEFT, K_RIGHT
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from generate_assets import generate_hit, generate_applause
 
 # Window resolution boosted for a clearer view of the court
 WIDTH, HEIGHT = 1280, 720
@@ -12,6 +14,14 @@ WIDTH, HEIGHT = 1280, 720
 # Dimensions of paddles and play field
 PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_DEPTH = 1.0, 2.0, 0.3
 COURT_HALF_WIDTH, COURT_HALF_DEPTH = 5.0, 7.0
+
+ASSETS_DIR = Path("assets")
+HIT_FILE = ASSETS_DIR / "hit.wav"
+APPLAUSE_FILE = ASSETS_DIR / "applause.wav"
+if not HIT_FILE.exists():
+    generate_hit(str(HIT_FILE))
+if not APPLAUSE_FILE.exists():
+    generate_applause(str(APPLAUSE_FILE))
 
 
 def init() -> None:
@@ -206,8 +216,8 @@ def main():
     player_score = opponent_score = 0
 
     font = pygame.font.SysFont(None, 48)
-    hit_sound = pygame.mixer.Sound("assets/hit.wav")
-    score_sound = pygame.mixer.Sound("assets/applause.wav")
+    hit_sound = pygame.mixer.Sound(str(HIT_FILE))
+    score_sound = pygame.mixer.Sound(str(APPLAUSE_FILE))
 
     while True:
         for event in pygame.event.get():
