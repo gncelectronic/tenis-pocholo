@@ -36,12 +36,14 @@ def _noise(duration=0.5, volume=0.5):
 
 try:
     pygame.mixer.init(frequency=44100, size=-16, channels=1)
-    sound_crowd = _noise(1.0, 0.3)
+    # Sonidos generados por código: aplausos, silbidos y ladridos
+    sound_applause = _noise(1.0, 0.3)
+    sound_whistle = _tone(1500, 0.3)
     sound_dog = _tone(500, 0.2)
     sound_hit = _tone(800, 0.1)
     sound_recover = _tone(600, 0.1)
 except Exception:
-    sound_crowd = sound_dog = sound_hit = sound_recover = None
+    sound_applause = sound_whistle = sound_dog = sound_hit = sound_recover = None
 
 # Colores
 GREEN = (34, 139, 34)
@@ -133,17 +135,27 @@ player_score = 0
 opponent_score = 0
 font = pygame.font.SysFont("Arial", 40)
 
-def create_stands_surface():
+def create_crowd_surface(mouth="smile"):
+    """Genera una tribuna con pequeñas caras pixeladas."""
     surf = pygame.Surface((WIDTH - 100, 40))
     surf.fill((70, 70, 70))
-    colors = [RED, BLUE, YELLOW, WHITE]
-    for x in range(0, surf.get_width(), 10):
-        for y in range(0, 40, 10):
-            pygame.draw.circle(surf, random.choice(colors), (x + 5, y + 5), 3)
+    for x in range(0, surf.get_width(), 20):
+        for y in range(0, 40, 20):
+            cx, cy = x + 10, y + 10
+            pygame.draw.circle(surf, SKIN, (cx, cy), 8)
+            pygame.draw.circle(surf, BLACK, (cx - 3, cy - 2), 2)
+            pygame.draw.circle(surf, BLACK, (cx + 3, cy - 2), 2)
+            if mouth == "smile":
+                pygame.draw.arc(surf, BLACK, (cx - 5, cy, 10, 6), math.pi, 2 * math.pi, 1)
+            else:  # boca sorprendida cuando el público silba
+                pygame.draw.circle(surf, BLACK, (cx, cy + 2), 3)
     return surf
 
-stands_top = create_stands_surface()
-stands_bottom = create_stands_surface()
+stands_top = create_crowd_surface("smile")
+stands_bottom = create_crowd_surface("smile")
+stands_top_shock = create_crowd_surface("shock")
+stands_bottom_shock = create_crowd_surface("shock")
+crowd_react_timer = 0
 
 # Menú
 game_state = "menu"
@@ -163,15 +175,18 @@ def reset_ball(direction=None):
 
 def draw_court():
     screen.fill(GREEN)
-    screen.blit(stands_top, (50, 0))
-    screen.blit(stands_bottom, (50, HEIGHT - 40))
+    if crowd_react_timer > 0:
+        screen.blit(stands_top_shock, (50, 0))
+        screen.blit(stands_bottom_shock, (50, HEIGHT - 40))
+    else:
+        screen.blit(stands_top, (50, 0))
+        screen.blit(stands_bottom, (50, HEIGHT - 40))
     pygame.draw.rect(screen, WHITE, (50, 50, WIDTH - 100, HEIGHT - 100), 5)
     pygame.draw.line(screen, WHITE, (WIDTH // 2, 50), (WIDTH // 2, HEIGHT - 50), 5)
-    # Árbitro al medio pero fuera de la cancha (lado izquierdo)
-    ref_x = 20
-    ref_y = HEIGHT // 2
-    pygame.draw.rect(screen, BLACK, (ref_x - 5, ref_y - 20, 10, 40))
-    pygame.draw.circle(screen, SKIN, (ref_x, ref_y - 25), 8)
+    # Árbitro al medio fuera de la cancha, justo sobre la red
+    ref_x = WIDTH // 2
+    pygame.draw.rect(screen, BLACK, (ref_x - 5, 15, 10, 30))
+    pygame.draw.circle(screen, SKIN, (ref_x, 10), 8)
 
 def draw():
     draw_court()
@@ -213,7 +228,7 @@ def update_dogs():
                 reset_ball(direction=random.choice([-7, 7]))
 
 def hit_dogs():
-    global ball_taken, dog_with_ball
+    global ball_taken, dog_with_ball, crowd_react_timer
     racquet_rect = pygame.Rect(player.right - 20, player.y + 20, 40, 60)
     for dog in dogs:
         if racquet_rect.colliderect(dog["rect"]):
@@ -224,6 +239,9 @@ def hit_dogs():
             dog["has_ball"] = False
             if sound_hit:
                 sound_hit.play()
+            if sound_whistle:
+                sound_whistle.play()
+            crowd_react_timer = 60
 
 def recover_ball():
     global ball_taken, dog_with_ball
@@ -248,11 +266,11 @@ def add_score(left_side):
         opponent_score += 1
     else:
         player_score += 1
-    if sound_crowd:
-        sound_crowd.play()
+    if sound_applause:
+        sound_applause.play()
 
 def game_loop():
-    global dog_timer, game_state
+    global dog_timer, game_state, crowd_react_timer
     reset_ball()
     while game_state == "playing":
         for event in pygame.event.get():
@@ -294,6 +312,8 @@ def game_loop():
             dog_timer = 0
 
         update_dogs()
+        if crowd_react_timer > 0:
+            crowd_react_timer -= 1
         draw()
         clock.tick(60)
 
