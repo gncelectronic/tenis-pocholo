@@ -17,6 +17,7 @@ COURT_HALF_WIDTH, COURT_HALF_DEPTH = 5.0, 7.0
 def init() -> None:
     """Set up pygame and a simple 3D camera."""
     pygame.init()
+    pygame.mixer.init()
     pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | OPENGL)
 
     # Basic perspective projection and camera position looking at the court
@@ -29,7 +30,7 @@ def init() -> None:
 
 
 def draw_court() -> None:
-    """Render the floor, boundaries and a small net."""
+    """Render the floor, boundaries and a basic 3D net."""
     # Floor
     glColor3f(0, 0.5, 0)
     glBegin(GL_QUADS)
@@ -48,12 +49,42 @@ def draw_court() -> None:
     glVertex3f(-COURT_HALF_WIDTH, 0.01, COURT_HALF_DEPTH)
     glEnd()
 
-    # Net
+    # Net posts
+    glColor3f(1, 1, 1)
     glBegin(GL_QUADS)
-    glVertex3f(-0.05, 0, 0)
-    glVertex3f(0.05, 0, 0)
-    glVertex3f(0.05, 1.5, 0)
-    glVertex3f(-0.05, 1.5, 0)
+    # Left post
+    glVertex3f(-COURT_HALF_WIDTH, 0, -0.05)
+    glVertex3f(-COURT_HALF_WIDTH, 0, 0.05)
+    glVertex3f(-COURT_HALF_WIDTH, 1.5, 0.05)
+    glVertex3f(-COURT_HALF_WIDTH, 1.5, -0.05)
+    # Right post
+    glVertex3f(COURT_HALF_WIDTH, 0, -0.05)
+    glVertex3f(COURT_HALF_WIDTH, 0, 0.05)
+    glVertex3f(COURT_HALF_WIDTH, 1.5, 0.05)
+    glVertex3f(COURT_HALF_WIDTH, 1.5, -0.05)
+    glEnd()
+
+    # Net mesh
+    glColor3f(1, 1, 1)
+    glBegin(GL_LINES)
+    x = -COURT_HALF_WIDTH
+    while x <= COURT_HALF_WIDTH:
+        glVertex3f(x, 0, 0)
+        glVertex3f(x, 1.5, 0)
+        x += 0.5
+    y = 0.0
+    while y <= 1.5:
+        glVertex3f(-COURT_HALF_WIDTH, y, 0)
+        glVertex3f(COURT_HALF_WIDTH, y, 0)
+        y += 0.25
+    glEnd()
+
+    # Top band
+    glBegin(GL_QUADS)
+    glVertex3f(-COURT_HALF_WIDTH, 1.4, 0)
+    glVertex3f(COURT_HALF_WIDTH, 1.4, 0)
+    glVertex3f(COURT_HALF_WIDTH, 1.5, 0)
+    glVertex3f(-COURT_HALF_WIDTH, 1.5, 0)
     glEnd()
 
 
@@ -168,11 +199,15 @@ def reset_ball(ball_pos, ball_speed):
 def main():
     init()
     clock = pygame.time.Clock()
-    player_pos = [0.0, 1.5, -COURT_HALF_DEPTH + 0.5]
-    opponent_pos = [0.0, 1.5, COURT_HALF_DEPTH - 0.5]
+    player_pos = [0.0, 1.5, COURT_HALF_DEPTH - 0.5]
+    opponent_pos = [0.0, 1.5, -COURT_HALF_DEPTH + 0.5]
     ball_pos = [0.0, 1.5, 0.0]
     ball_speed = [0.1, 0.05, 0.2]
     player_score = opponent_score = 0
+
+    font = pygame.font.SysFont(None, 48)
+    hit_sound = pygame.mixer.Sound("assets/hit.wav")
+    score_sound = pygame.mixer.Sound("assets/applause.wav")
 
     while True:
         for event in pygame.event.get():
@@ -185,10 +220,10 @@ def main():
             player_pos[0] -= 0.2
         if keys[K_RIGHT] and player_pos[0] < COURT_HALF_WIDTH - PADDLE_WIDTH / 2:
             player_pos[0] += 0.2
-        if keys[K_UP] and player_pos[2] < -PADDLE_DEPTH:
-            player_pos[2] += 0.2
-        if keys[K_DOWN] and player_pos[2] > -COURT_HALF_DEPTH + PADDLE_DEPTH:
+        if keys[K_UP] and player_pos[2] > PADDLE_DEPTH:
             player_pos[2] -= 0.2
+        if keys[K_DOWN] and player_pos[2] < COURT_HALF_DEPTH - PADDLE_DEPTH:
+            player_pos[2] += 0.2
 
         if opponent_pos[0] + 0.1 < ball_pos[0]:
             opponent_pos[0] += 0.1
@@ -202,25 +237,29 @@ def main():
             ball_speed[1] *= -1
 
         if (
-            ball_pos[2] <= player_pos[2] + PADDLE_DEPTH
-            and ball_pos[2] >= player_pos[2]
+            ball_pos[2] >= player_pos[2] - PADDLE_DEPTH
+            and ball_pos[2] <= player_pos[2]
             and abs(ball_pos[0] - player_pos[0]) <= PADDLE_WIDTH
             and abs(ball_pos[1] - 1.5) <= PADDLE_HEIGHT / 2
         ):
             ball_speed[2] *= -1
+            hit_sound.play()
         if (
-            ball_pos[2] >= opponent_pos[2] - PADDLE_DEPTH
-            and ball_pos[2] <= opponent_pos[2]
+            ball_pos[2] <= opponent_pos[2] + PADDLE_DEPTH
+            and ball_pos[2] >= opponent_pos[2]
             and abs(ball_pos[0] - opponent_pos[0]) <= PADDLE_WIDTH
             and abs(ball_pos[1] - 1.5) <= PADDLE_HEIGHT / 2
         ):
             ball_speed[2] *= -1
+            hit_sound.play()
 
-        if ball_pos[2] < -COURT_HALF_DEPTH:
+        if ball_pos[2] > COURT_HALF_DEPTH:
             opponent_score += 1
+            score_sound.play()
             reset_ball(ball_pos, ball_speed)
-        elif ball_pos[2] > COURT_HALF_DEPTH:
+        elif ball_pos[2] < -COURT_HALF_DEPTH:
             player_score += 1
+            score_sound.play()
             reset_ball(ball_pos, ball_speed)
 
         pygame.display.set_caption(f"Tenis Pocholo 3D - {player_score} : {opponent_score}")
@@ -230,6 +269,13 @@ def main():
         draw_player(player_pos, (0, 0, 1))
         draw_player(opponent_pos, (1, 0, 0))
         draw_ball(ball_pos)
+
+        glDisable(GL_DEPTH_TEST)
+        score_text = font.render(f"Jugador {player_score} - CPU {opponent_score}", True, (255, 255, 255))
+        screen = pygame.display.get_surface()
+        screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, 20))
+        glEnable(GL_DEPTH_TEST)
+
         pygame.display.flip()
         clock.tick(60)
 
