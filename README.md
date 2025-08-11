@@ -2,11 +2,11 @@
 
 Arcade de tenis 2D donde perros salchicha intentan robar la pelota. Los jugadores
 portan raquetas, lucen flequillo y la pelota es amarilla fluorescente. Ahora la
-cancha incluye gradas con hinchada, un árbitro al costado y rostros pixelados
-al estilo Double Dragon. Las figuras de los jugadores fueron ensanchadas para
-recordar la musculatura del clásico beat 'em up y los efectos de sonido se
-generan por código con un ruido de público más realista, sin archivos de audio
-externos.
+cancha incluye gradas con hinchada, un árbitro en el centro superior y rostros
+pixelados al estilo Double Dragon que silban cuando golpeas a un perro. Las
+figuras de los jugadores fueron ensanchadas para recordar la musculatura del
+clásico beat 'em up y los efectos de sonido se generan por código con aplausos y
+silbidos más realistas, sin archivos de audio externos.
 
 ## Requisitos
 - Python 3
